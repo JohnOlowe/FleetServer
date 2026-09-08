@@ -14,6 +14,9 @@
 
   <style name="AppTheme" parent="Base.AppTheme" />
 
+  <!-- Dot notation implies a parent, so the prefixes need a definition of their own. -->
+  <style name="Widget.Fleet" />
+
   <!-- Small status chips floating over the map -->
   <style name="Widget.Fleet.Chip" parent="Widget.Material3.Chip.Assist">
     <item name="chipIconTint">@color/text_primary</item>
@@ -35,6 +38,8 @@
     <item name="android:paddingBottom">4dp</item>
     <item name="android:textColor">@android:color/white</item>
   </style>
+
+  <style name="TextAppearance.Fleet" />
 
   <style name="TextAppearance.Fleet.Mono" parent="TextAppearance.Material3.BodySmall">
     <item name="fontFamily">monospace</item>

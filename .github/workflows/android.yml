@@ -49,7 +49,15 @@ jobs:
         run: chmod +x ./gradlew
 
       - name: Probe signing wiring (temporary)
-        run: ./gradlew -q printSigningProbe
+        env:
+          ORG_GRADLE_PROJECT_FLEETSERVER_PROBE: probe-ok
+        run: |
+          OUT=$(./gradlew -q printSigningProbe)
+          echo "$OUT"
+          echo "$OUT" | grep -q "PROBE_ENV_VALUE=probe-ok" || {
+            echo "::error::ORG_GRADLE_PROJECT_* environment variables are not reaching Gradle"
+            exit 1
+          }
 
       - name: Assemble debug APK
         id: assemble

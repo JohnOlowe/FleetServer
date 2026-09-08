@@ -17,11 +17,15 @@ val localKeystoreProps = Properties().apply {
   }
 }
 
-fun signingValue(name: String, fallback: String? = null): String? =
-  localKeystoreProps.getProperty(name)
+fun signingValue(name: String, fallback: String? = null): String? {
+  // An unset GitHub Actions secret arrives as an empty string, not as nothing, and
+  // an empty password is a broken signing config rather than a missing one.
+  val value = localKeystoreProps.getProperty(name)
     ?: (project.findProperty(name) as? String)
     ?: System.getenv(name)
     ?: fallback
+  return value?.takeIf { it.isNotBlank() }
+}
 
 android {
   namespace = "damjay.tracker.fleetserver"
@@ -65,7 +69,9 @@ android {
       val stable = signingConfigs.getByName("stable")
       // Half a signing config is worse than none: without both passwords the build
       // would fail at signing time, so fall back to the standard Android debug key.
-      if (stable.storeFile != null && stable.storePassword != null && stable.keyPassword != null) {
+      if (stable.storeFile != null && !stable.storePassword.isNullOrBlank()
+          && !stable.keyPassword.isNullOrBlank()
+      ) {
         signingConfig = stable
       } else {
         logger.lifecycle("Stable signing key unavailable (keystore or passwords missing) - using the default debug key")
@@ -106,5 +112,6 @@ tasks.register("printSigningProbe") {
     println("PROBE_KEY_ALIAS=" + (signingValue("FLEETSERVER_KEY_ALIAS") ?: "none"))
     println("PROBE_STORE_PASSWORD_SET=" + (signingValue("FLEETSERVER_STORE_PASSWORD") != null))
     println("PROBE_KEY_PASSWORD_SET=" + (signingValue("FLEETSERVER_KEY_PASSWORD") != null))
+    println("PROBE_ENV_VALUE=" + (signingValue("FLEETSERVER_PROBE") ?: "none"))
   }
 }

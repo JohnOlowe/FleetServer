@@ -6,8 +6,10 @@ import org.json.JSONObject;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
@@ -24,6 +26,9 @@ import damjay.tracker.fleetserver.model.Telemetry;
  *   <li>key:value - {@code device:esp32-01,lat:6.52,lon:3.37,state:4}</li>
  *   <li>ordered values - {@code esp32-01,6.52,3.37,4} (CSV-ish, comma/semicolon/space separated)</li>
  * </ul>
+ * <p>A device with no fix can leave the coordinates blank - {@code esp32-03,,,1} - or send only a
+ * device id and a state - {@code esp32-03 1}. Only one of latitude and longitude? That counts as
+ * no position at all, and the device keeps its last known location.
  * <p>Quotes and braces are optional: a payload that a shell has mangled (unquoted JSON, stray
  * quotes around the body, {@code {device:x,lat:1.2}}) is still parsed. Field names are matched
  * case-insensitively against a list of common aliases.
@@ -127,7 +132,7 @@ public final class TelemetryParser {
 
   /** Parses {@code device,lat,lon,state[,speed,heading]} style payloads. */
   public static Telemetry fromDelimited(String raw) {
-    String[] tokens = raw.trim().split("[,;\\s]+");
+    String[] tokens = splitFields(raw);
     Map<String, Object> values = new HashMap<>();
     if (tokens.length >= 4) {
       values.put("device", unglue(tokens[0]));
@@ -144,10 +149,59 @@ public final class TelemetryParser {
       values.put("lat", unglue(tokens[0]));
       values.put("lon", unglue(tokens[1]));
       values.put("state", unglue(tokens[2]));
+    } else if (tokens.length == 2 && !isNumber(tokens[0])) {
+      // "esp32-03 1" - a device reporting a state with no fix, so no coordinates at all.
+      values.put("device", unglue(tokens[0]));
+      values.put("state", unglue(tokens[1]));
     } else {
-      throw new IllegalArgumentException("expected JSON, key=value or lat,lon,state - got: " + raw);
+      throw new IllegalArgumentException("expected JSON, key=value or device,lat,lon,state - got: " + raw);
     }
     return fromMap(values);
+  }
+
+  /**
+   * Splits on commas, semicolons and whitespace, but keeps empty fields: a device with no GPS fix
+   * sends {@code esp32-03,,,1}, and those two blanks are the point. Runs of whitespace count as a
+   * single separator, while every comma counts as one, so {@code a,,,b} is four fields.
+   */
+  private static String[] splitFields(String raw) {
+    List<String> fields = new ArrayList<>();
+    StringBuilder current = new StringBuilder();
+    boolean inGap = false;
+    String s = raw.trim();
+    for (int i = 0; i < s.length(); i++) {
+      char c = s.charAt(i);
+      if (c == ',' || c == ';') {
+        fields.add(current.toString());
+        current.setLength(0);
+        inGap = true;
+      } else if (Character.isWhitespace(c)) {
+        if (!inGap) {
+          fields.add(current.toString());
+          current.setLength(0);
+          inGap = true;
+        }
+      } else {
+        current.append(c);
+        inGap = false;
+      }
+    }
+    if (current.length() > 0) {
+      fields.add(current.toString());
+    }
+    return fields.toArray(new String[0]);
+  }
+
+  private static boolean isNumber(String value) {
+    if (value.isEmpty()) {
+      return false;
+    }
+    try {
+      Double.parseDouble(value.trim().replace(',', '.'));
+      return true;
+    } catch (NumberFormatException e) {
+      return false;
+    }
   }
 
   private static Telemetry fromMap(@NonNull Map<String, Object> values) {
@@ -156,9 +210,17 @@ public final class TelemetryParser {
         "vehicle", "unit", "tracker", "tag"));
     t.name = clean(firstString(values, "label", "displayname", "display_name", "vehiclename"));
 
-    t.latitude = requireInRange(firstDouble(values, "lat", "latitude", "gpslat", "gps_lat", "y"), -90d, 90d, "latitude");
-    t.longitude = requireInRange(firstDouble(values, "lon", "lng", "long", "longitude", "gpslon",
+    double latitude = requireInRange(firstDouble(values, "lat", "latitude", "gpslat", "gps_lat", "y"), -90d, 90d, "latitude");
+    double longitude = requireInRange(firstDouble(values, "lon", "lng", "long", "longitude", "gpslon",
         "gps_lon", "gpslng", "gps_lng", "x"), -180d, 180d, "longitude");
+    // Half a coordinate cannot be plotted: a device with no fix sends blank (or 0) lat and lon,
+    // so treat "one of the two" the same as "neither" and fall back to the last known position.
+    if (Double.isNaN(latitude) || Double.isNaN(longitude)) {
+      latitude = Double.NaN;
+      longitude = Double.NaN;
+    }
+    t.latitude = latitude;
+    t.longitude = longitude;
 
     Object stateValue = first(values, "state", "status", "mode", "gps_state", "gpsstate", "fix_state", "devicestate");
     if (stateValue != null) {

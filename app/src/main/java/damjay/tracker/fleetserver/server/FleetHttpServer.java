@@ -270,9 +270,11 @@ public final class FleetHttpServer {
       String message = e.getMessage() == null ? "bad payload" : e.getMessage();
       store.reject("bad payload from " + peer + ": " + message + " | body: "
           + truncate(payload, 200), peer);
+      // Deliberately free of quote marks: the message is embedded in a JSON string, so any quote
+      // would come back escaped and confuse anyone copying it straight into a terminal.
       throw new IllegalArgumentException(message
-          + " - send JSON like {\"device\":\"esp32-01\",\"lat\":6.52,\"lon\":3.37,"
-          + "\"state\":4} (key=value, key:value and device,lat,lon,state also accepted)");
+          + " - try device=esp32-01&lat=6.52&lon=3.37&state=4 (JSON, key:value and"
+          + " device,lat,lon,state also work; empty lat,lon is fine when there is no fix)");
     }
   }
 

@@ -46,14 +46,28 @@ all feed it. Every one of these is the same report:
 device:esp32-01,lat:6.5244,lon:3.3792,state:4               # key:value
 lat=6.5244&lon=3.3792&state=4                               # query string
 esp32-01,6.5244,3.3792,4                                    # ordered values
+esp32-03,,,1                                                # no fix - leave the coords blank
+esp32-03 1                                                  # just a device id and a state
 ```
 
 Surrounding quotes are stripped, so a body that `cmd.exe` passed through with its single quotes
-still works.
+still works. A device with no fix can leave `lat` and `lon` empty (`esp32-03,,,1`), send `0` for
+both, or omit them altogether — the report is kept, the pin is not drawn, and the device stays in
+the list with its state. Only one of the two coordinates arriving is treated the same as neither.
 
-> **Shell quoting tip.** `curl -d '{"lat":6.52}'` works in bash, zsh, PowerShell and WSL. In
-> Windows **cmd.exe** single quotes are not quotes — use double quotes and escape the inner ones:
-> `curl -X POST http://<phone-ip>:8080/telemetry -d "{\"device\":\"esp32-01\",\"lat\":6.5244,\"lon\":3.3792,\"state\":4}"`
+> **Windows cmd.exe** does not treat single quotes as quotes, so `'{"lat":6.52}'` reaches the phone
+> as `lat:6.52` fragments, and the `\"` escapes that come back inside a JSON error message are not
+> something you can paste into a terminal. Skip escaping altogether — these work as typed:
+>
+> ```bat
+> curl -X POST http://<phone-ip>:8080/telemetry -d esp32-01,6.5244,3.3792,4
+> curl -X POST http://<phone-ip>:8080/telemetry -d esp32-03,,,1
+> curl -X POST http://<phone-ip>:8080/telemetry -d "device=esp32-01&lat=6.5244&lon=3.3792&state=4"
+> ```
+>
+> The `&` needs the double quotes; the comma forms do not. In bash, zsh, PowerShell and WSL the
+> JSON form works with single quotes:
+> `curl -X POST http://<phone-ip>:8080/telemetry -d '{"device":"esp32-01","lat":6.5244,"lon":3.3792,"state":4}'`.
 
 ## Report fields
 
@@ -75,7 +89,8 @@ still works.
 | `note` | `message`, `msg` | no | Free text shown in the detail sheet |
 
 \* A report is rejected only when it carries neither a device id, nor a position, nor a state.
-\** Sending `lat=0&lon=0` is treated as **no position** (trackers do this before the first fix).
+\** Sending `lat=0&lon=0`, or leaving `lat`/`lon` blank, is treated as **no position** (trackers
+do this before the first fix).
 If a valid position arrives without a `state`, the app assumes `4` (operational).
 
 ## Device states

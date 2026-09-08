@@ -14,3 +14,6 @@ out/
 
 # Local credentials for the ESP32 sketches
 secrets.h
+
+# Local sketch copies with real credentials (never commit these)
+*.local.ino

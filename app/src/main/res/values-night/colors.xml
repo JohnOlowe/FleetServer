@@ -1,2 +1,31 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources></resources>
+<resources>
+  <!-- Brand -->
+  <color name="brand_navy">#FF071320</color>
+  <color name="brand_teal">#FF12BFA5</color>
+  <color name="brand_teal_dark">#FF0E7C86</color>
+  <color name="brand_amber">#FFFFB02E</color>
+
+  <!-- Device states (wire codes 1..4) -->
+  <color name="state_gps_not_found">#FFFF6B6F</color>
+  <color name="state_no_fix">#FFFFB44D</color>
+  <color name="state_offline">#FF7CB0FF</color>
+  <color name="state_operational">#FF4ADE80</color>
+  <color name="state_unknown">#FF9AA8B8</color>
+
+  <!-- Surfaces -->
+  <color name="window_bg">#FF0B131C</color>
+  <color name="panel_bg">#FF121C27</color>
+  <color name="panel_border">#FF1F2D3B</color>
+  <color name="text_primary">#FFE6EDF3</color>
+  <color name="text_secondary">#FF93A4B6</color>
+  <color name="chip_surface">#FF1B2836</color>
+  <color name="icon_tint">#FFDCE6F0</color>
+
+  <!-- Offline schematic map -->
+  <color name="map_bg">#FF0E1723</color>
+  <color name="map_grid">#FF22323F</color>
+  <color name="map_grid_minor">#FF1A2734</color>
+  <color name="map_label">#FF7D8FA3</color>
+  <color name="map_halo">#FF16222D</color>
+</resources>

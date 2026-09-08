@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<TextView xmlns:android="http://schemas.android.com/apk/res/android"
+  android:id="@+id/log_line"
+  android:layout_width="match_parent"
+  android:layout_height="wrap_content"
+  android:fontFamily="monospace"
+  android:paddingStart="14dp"
+  android:paddingTop="6dp"
+  android:paddingEnd="14dp"
+  android:paddingBottom="6dp"
+  android:text="12:34:56  [in]  esp32-01 6.524400,3.379200 [OPERATIONAL]"
+  android:textAppearance="?attr/textAppearanceBodySmall"
+  android:textColor="@color/text_primary" />

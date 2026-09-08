@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+  xmlns:app="http://schemas.android.com/apk/res-auto"
+  style="@style/Widget.Fleet.Card"
+  android:layout_width="match_parent"
+  android:layout_height="wrap_content"
+  android:layout_marginStart="6dp"
+  android:layout_marginEnd="6dp"
+  android:layout_marginBottom="8dp"
+  android:clickable="true"
+  android:focusable="true">
+
+  <LinearLayout
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:gravity="center_vertical"
+    android:orientation="horizontal"
+    android:paddingStart="12dp"
+    android:paddingTop="12dp"
+    android:paddingEnd="12dp"
+    android:paddingBottom="12dp">
+
+    <View
+      android:id="@+id/state_bar"
+      android:layout_width="4dp"
+      android:layout_height="42dp"
+      android:background="@drawable/bg_state_bar" />
+
+    <LinearLayout
+      android:layout_width="0dp"
+      android:layout_height="wrap_content"
+      android:layout_marginStart="12dp"
+      android:layout_weight="1"
+      android:orientation="vertical">
+
+      <TextView
+        android:id="@+id/device_name"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:ellipsize="end"
+        android:maxLines="1"
+        android:text="esp32-01"
+        android:textAppearance="?attr/textAppearanceTitleSmall"
+        android:textColor="@color/text_primary" />
+
+      <TextView
+        android:id="@+id/device_coords"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="2dp"
+        android:text="6.524400, 3.379200"
+        android:textAppearance="@style/TextAppearance.Fleet.Coords" />
+
+      <TextView
+        android:id="@+id/device_meta"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="2dp"
+        android:text="just now · 12 packets"
+        android:textAppearance="?attr/textAppearanceBodySmall"
+        android:textColor="@color/text_secondary" />
+    </LinearLayout>
+
+    <TextView
+      android:id="@+id/device_state"
+      style="@style/Widget.Fleet.StatePill"
+      android:layout_width="wrap_content"
+      android:layout_height="wrap_content"
+      android:layout_marginStart="8dp"
+      android:background="@drawable/bg_state_pill"
+      android:text="@string/state_operational" />
+
+    <ImageView
+      android:layout_width="20dp"
+      android:layout_height="20dp"
+      android:layout_marginStart="6dp"
+      android:contentDescription="@string/app_name"
+      android:src="@drawable/ic_chevron_right"
+      app:tint="@color/icon_tint" />
+  </LinearLayout>
+</com.google.android.material.card.MaterialCardView>

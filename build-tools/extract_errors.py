@@ -67,7 +67,7 @@ def main():
             for offset in (1, 2, 3):
                 if index + offset < len(lines):
                     following = lines[index + offset].rstrip()
-                    if following.strip().startswith("^") or following.strip().startswith("symbol:")
+                    if following.strip().startswith("^") or following.strip().startswith("symbol:"):
                         kept.append(following)
 
     if not kept:

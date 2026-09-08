@@ -15,6 +15,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import java.util.ArrayList;
 import java.util.List;
 
+import damjay.tracker.fleetserver.R;
 import damjay.tracker.fleetserver.databinding.ItemDeviceBinding;
 import damjay.tracker.fleetserver.model.TrackedDevice;
 

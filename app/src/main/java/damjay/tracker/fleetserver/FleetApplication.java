@@ -4,6 +4,7 @@ import android.app.Application;
 import android.util.Log;
 
 import org.osmdroid.config.Configuration;
+import org.osmdroid.config.IConfigurationProvider;
 
 import java.io.File;
 
@@ -25,7 +26,7 @@ public class FleetApplication extends Application {
     try {
       File base = new File(getFilesDir(), "osmdroid");
       File tiles = new File(base, "tiles");
-      Configuration configuration = Configuration.getInstance();
+      IConfigurationProvider configuration = Configuration.getInstance();
       configuration.load(this, getSharedPreferences("osmdroid", MODE_PRIVATE));
       configuration.setUserAgentValue(getPackageName());
       configuration.setOsmdroidBasePath(base);

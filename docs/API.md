@@ -12,13 +12,28 @@ Everything below works from an ESP32, a laptop, or `curl`.
 | `POST` | `/telemetry` | Submit a report (JSON body) |
 | `GET` | `/telemetry?lat=..&lon=..&state=..` | Submit a report (query string) |
 | any | raw TCP | Send one line — `esp32-01,6.52,3.37,4` or a JSON object |
-| `GET` | `/` | HTML dashboard (open it from any browser on the network) |
-| `GET` | `/api/devices` | JSON snapshot of the fleet |
+| `GET` | `/` (or `/map`) | **Live web map** — open it from any laptop on the same network |
+| `GET` | `/api/devices` | JSON snapshot of the fleet (`?trail=1` also returns the trails) |
 | `GET` | `/api/devices/<id>` | JSON for one device including its trail |
 | `GET` | `/api/log` | JSON traffic log |
 | `GET` | `/health` | `ok` — quick reachability check |
 
 Responses are JSON. `Access-Control-Allow-Origin: *` is set, so a browser page can post too.
+
+## Web dashboard
+
+Open `http://<phone-ip>:8080/` in any browser on the same network (or on the phone's hotspot) and
+you get the same view the app shows:
+
+* a map with every tracker — **OpenStreetMap tiles** when the browser has internet, and a
+  **built-in latitude/longitude grid** when it does not (both are drawn from `/api/devices?trail=1`)
+* pins coloured by state, trails, drag to pan, wheel/double-click to zoom
+* a live device list with coordinates, packet counts, satellites and "last seen"
+* Fit all / Follow / map-source / refresh-interval controls
+* auto-refreshes every 2 s by default
+
+Nothing external is required: if Leaflet cannot be fetched, the page silently stays on the grid map,
+so it still works when the phone is a hotspot with no internet.
 
 ## Report fields
 

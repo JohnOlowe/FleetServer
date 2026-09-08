@@ -90,7 +90,8 @@ public class FleetServerService extends Service {
   }
 
   private void startServer(int port) {
-    FleetHttpServer created = new FleetHttpServer(port, store);
+    FleetHttpServer created = new FleetHttpServer(port, store,
+        DashboardPage.load(getApplicationContext()));
     try {
       created.start();
     } catch (IOException e) {

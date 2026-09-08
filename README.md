@@ -26,8 +26,9 @@ app. No cloud, no API keys, no account.
   * switch between the two with the chip at the top of the map
 * Live list of devices with coordinates, packet count and "last seen".
 * Traffic log of every accepted (and rejected) packet — handy when bringing up new hardware.
-* Remembers the fleet across restarts, and serves a small HTML dashboard at `http://<phone-ip>:8080`
-  so you can also watch the fleet from a laptop browser.
+* Shares the map with any laptop on the same network: open `http://<phone-ip>:8080/` in a browser
+  and you get a live map (OSM tiles when the browser has internet, a self-contained coordinate grid
+  when it doesn't), the device list, trails and follow/fit controls — refreshed every 2 seconds.
 
 ## Device states
 
@@ -64,7 +65,15 @@ curl -X POST http://192.168.43.1:8080/telemetry \
   -d '{"device":"esp32-01","lat":7.3775,"lon":3.9470,"state":4}'
 ```
 
-Full protocol: [docs/API.md](docs/API.md).
+Full protocol and web-dashboard details: [docs/API.md](docs/API.md).
+
+## Watching from a laptop
+
+With the server running, open **http://<phone-ip>:8080/** on any computer on the same network (or
+connected to the phone's hotspot). The page is served by the phone itself, so there is nothing to
+install: it polls `api/devices?trail=1` and draws pins, trails and the device list. It uses
+OpenStreetMap tiles when the laptop has internet and falls back to the built-in grid map when it
+does not — the same two modes the app offers.
 
 ## Screens and settings
 
@@ -73,7 +82,7 @@ Full protocol: [docs/API.md](docs/API.md).
 | Map chips | server status, **map source** (OSM / offline), **Follow** and **Fit all** |
 | Device list | tap a tracker for details: accuracy, satellites, speed, heading, altitude, source IP, trail length, copy coordinates, centre on map, clear trail, remove |
 | ⋮ → Start/Stop server | control the receiver |
-| ⋮ → Connection info | endpoints, transport and copy-paste snippets |
+| ⋮ → Connection info | endpoints, the web dashboard URL, transport and copy-paste snippets |
 | ⋮ → Traffic log | every packet with its timestamp |
 | ⋮ → Settings | listening port (1024–65535), auto-start, follow, trails, map source, network info |
 

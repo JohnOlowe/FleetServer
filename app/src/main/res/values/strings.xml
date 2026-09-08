@@ -87,6 +87,7 @@
   <string name="connection_title">Send telemetry here</string>
   <string name="connection_endpoints">Endpoints</string>
   <string name="connection_transport">Connection: %1$s</string>
+  <string name="connection_web">Web dashboard (any laptop on this network): %1$s — a live map, no install needed</string>
   <string name="connection_how">From the ESP32 (same Wi-Fi network, or joined to this phone\'s hotspot):</string>
   <string name="connection_curl">Or test from a computer on the same network:</string>
   <string name="connection_hint">States: 1 = GPS device not found, 2 = No GPS fix,\n3 = Offline mode, 4 = Operational.</string>

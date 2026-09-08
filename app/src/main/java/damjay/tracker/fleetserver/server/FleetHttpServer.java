@@ -53,21 +53,24 @@ public final class FleetHttpServer {
   private static final String TAG = "FleetHttpServer";
   private static final int SO_TIMEOUT_MS = 10000;
   private static final int MAX_BODY_BYTES = 64 * 1024;
+  private static final int MAX_TRAIL_POINTS = 300;
 
   private static final List<String> TELEMETRY_PATHS = Arrays.asList(
       "/telemetry", "/api/telemetry", "/update", "/post", "/gps", "/report", "/location", "/fix");
 
   private final int port;
   private final FleetStore store;
+  private final String dashboardPage;
 
   private ServerSocket serverSocket;
   private Thread acceptThread;
   private volatile boolean running;
   private final ExecutorService workers = Executors.newFixedThreadPool(8);
 
-  public FleetHttpServer(int port, @NonNull FleetStore store) {
+  public FleetHttpServer(int port, @NonNull FleetStore store, String dashboardPage) {
     this.port = port;
     this.store = store;
+    this.dashboardPage = dashboardPage;
   }
 
   public synchronized void start() throws IOException {
@@ -201,9 +204,10 @@ public final class FleetHttpServer {
         return;
       }
 
-      if (path.equals("/") || path.equals("/index.html")) {
-        write(out, 200, "OK", "text/html; charset=utf-8",
-            dashboard().getBytes(StandardCharsets.UTF_8));
+      if (path.equals("/") || path.equals("/index.html") || path.equals("/map")) {
+        String page = (dashboardPage == null || dashboardPage.isEmpty()) ? dashboard()
+            : dashboardPage;
+        write(out, 200, "OK", "text/html; charset=utf-8", page.getBytes(StandardCharsets.UTF_8));
         return;
       }
       if (path.equals("/health") || path.equals("/ping")) {
@@ -211,7 +215,8 @@ public final class FleetHttpServer {
         return;
       }
       if (path.equals("/api/devices")) {
-        write(out, 200, "OK", "application/json", devicesJson().getBytes(StandardCharsets.UTF_8));
+        write(out, 200, "OK", "application/json",
+            devicesJson(hasFlag(query, "trail")).getBytes(StandardCharsets.UTF_8));
         return;
       }
       if (path.startsWith("/api/devices/")) {
@@ -275,6 +280,27 @@ public final class FleetHttpServer {
         || upper.endsWith("HTTP/1.0");
   }
 
+  /** True when a query string contains a flag set to 1/true/yes. */
+  private static boolean hasFlag(String query, String name) {
+    if (query == null || query.isEmpty()) {
+      return false;
+    }
+    for (String pair : query.split("&")) {
+      int eq = pair.indexOf('=');
+      if (eq <= 0) {
+        continue;
+      }
+      if (!pair.substring(0, eq).equalsIgnoreCase(name)) {
+        continue;
+      }
+      String value = pair.substring(eq + 1).trim().toLowerCase(Locale.US);
+      if (value.equals("1") || value.equals("true") || value.equals("yes")) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   private static String normalise(String path) {
     String p = path.trim();
     if (p.isEmpty()) {
@@ -306,11 +332,11 @@ public final class FleetHttpServer {
     out.flush();
   }
 
-  private String devicesJson() throws JSONException {
+  private String devicesJson(boolean withTrail) throws JSONException {
     List<TrackedDevice> devices = store.snapshot();
     JSONArray array = new JSONArray();
     for (TrackedDevice device : devices) {
-      array.put(summary(device, false));
+      array.put(summary(device, withTrail));
     }
     JSONObject root = new JSONObject();
     root.put("devices", array);
@@ -374,7 +400,9 @@ public final class FleetHttpServer {
     }
     if (withTrail) {
       JSONArray trail = new JSONArray();
-      for (TrackedDevice.TrailPoint point : device.trail) {
+      int from = Math.max(0, device.trail.size() - MAX_TRAIL_POINTS);
+      for (int i = from; i < device.trail.size(); i++) {
+        TrackedDevice.TrailPoint point = device.trail.get(i);
         JSONArray p = new JSONArray();
         p.put(point.latitude);
         p.put(point.longitude);

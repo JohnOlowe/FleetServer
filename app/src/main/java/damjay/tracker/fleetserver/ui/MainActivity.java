@@ -494,6 +494,10 @@ public class MainActivity extends AppCompatActivity
       message.append("  ").append(address.url(port)).append("/telemetry")
           .append("   [").append(address.interfaceName).append("]\n");
     }
+    String webUrl = addresses.isEmpty()
+        ? "http://<phone-ip>:" + port + "/"
+        : addresses.get(0).url(port) + "/";
+    message.append('\n').append(getString(R.string.connection_web, webUrl)).append('\n');
     message.append('\n').append(getString(R.string.connection_how)).append('\n')
         .append("  POST /telemetry\n")
         .append("  {\"device\":\"esp32-01\",\"lat\":6.5244,\"lon\":3.3792,\"state\":4}\n\n")

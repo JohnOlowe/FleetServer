@@ -48,10 +48,19 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
         run: |
-          python3 build-tools/extract_errors.py gradle-build.log > build-errors.txt
-          python3 build-tools/make_check_payload.py build-errors.txt "${{ github.sha }}" "${{ github.ref_name }}" > payload.json
-          gh api "repos/$GH_REPO/check-runs" --input payload.json
-          head -c 3000 build-errors.txt
+          python3 build-tools/extract_errors.py gradle-build.log > build-errors.txt || true
+          # full text as a check run when the token allows it
+          python3 build-tools/make_check_payload.py build-errors.txt "${{ github.sha }}" "${{ github.ref_name }}" > payload.json || true
+          gh api "repos/$GH_REPO/check-runs" --input payload.json || true
+          # and the first lines as job annotations (visible on the run page)
+          count=0
+          while IFS= read -r line; do
+            count=$((count + 1))
+            if [ "$count" -gt 9 ]; then break; fi
+            echo "::error::${line//%/%25}"
+          done < build-errors.txt
+          echo "### Build errors" >> "$GITHUB_STEP_SUMMARY"
+          head -c 60000 build-errors.txt >> "$GITHUB_STEP_SUMMARY"
           exit 1
 
       - name: Run lint

@@ -49,14 +49,9 @@ jobs:
           GH_REPO: ${{ github.repository }}
         run: |
           python3 build-tools/extract_errors.py gradle-build.log > build-errors.txt
-          gh api "repos/$GH_REPO/check-runs" \
-            -f name="Build errors" \
-            -f head_sha="${{ github.sha }}" \
-            -f status=completed \
-            -f conclusion=failure \
-            -f output[title]="Gradle build failed on ${{ github.ref_name }}" \
-            -f output[summary]="See the extracted compiler output below." \
-            -F output[text]=@build-errors.txt
+          python3 build-tools/make_check_payload.py build-errors.txt "${{ github.sha }}" "${{ github.ref_name }}" > payload.json
+          gh api "repos/$GH_REPO/check-runs" --input payload.json
+          head -c 3000 build-errors.txt
           exit 1
 
       - name: Run lint

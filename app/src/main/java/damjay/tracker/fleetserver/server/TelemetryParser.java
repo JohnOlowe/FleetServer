@@ -15,15 +15,18 @@ import damjay.tracker.fleetserver.model.DeviceState;
 import damjay.tracker.fleetserver.model.Telemetry;
 
 /**
- * Turns whatever an ESP32 sends into a {@link Telemetry}.
+ * Turns whatever an ESP32 - or a laptop with curl - sends into a {@link Telemetry}.
  *
- * <p>Three shapes are understood, so almost any sketch works without changes:
+ * <p>These shapes are all understood:
  * <ul>
  *   <li>JSON - {@code {"device":"esp32-01","lat":6.52,"lon":3.37,"state":4}}</li>
  *   <li>key/value - {@code lat=6.52&lon=3.37&state=4} (query string or plain text)</li>
+ *   <li>key:value - {@code device:esp32-01,lat:6.52,lon:3.37,state:4}</li>
  *   <li>ordered values - {@code esp32-01,6.52,3.37,4} (CSV-ish, comma/semicolon/space separated)</li>
  * </ul>
- * Field names are matched case-insensitively against a list of common aliases.
+ * <p>Quotes and braces are optional: a payload that a shell has mangled (unquoted JSON, stray
+ * quotes around the body, {@code {device:x,lat:1.2}}) is still parsed. Field names are matched
+ * case-insensitively against a list of common aliases.
  */
 public final class TelemetryParser {
 
@@ -32,17 +35,35 @@ public final class TelemetryParser {
 
   /** Parse a payload, guessing its shape. Throws with a readable message when it makes no sense. */
   public static Telemetry parse(String payload) {
-    String s = payload == null ? "" : payload.trim();
+    String s = stripOuterQuotes(payload == null ? "" : payload.trim());
     if (s.isEmpty()) {
       throw new IllegalArgumentException("empty payload");
     }
     if (s.charAt(0) == '{' || s.charAt(0) == '[') {
-      return fromJson(s);
+      try {
+        return fromJson(s);
+      } catch (RuntimeException e) {
+        // JSON that a shell mangled - quotes or braces missing, e.g.
+        // {device:esp32-01,lat:6.52,lon:3.37,state:4}. Parse it leniently instead.
+        return fromKeyValue(s);
+      }
     }
-    if (s.indexOf('=') >= 0) {
+    if (s.indexOf('=') >= 0 || s.indexOf(':') >= 0) {
       return fromKeyValue(s);
     }
     return fromDelimited(s);
+  }
+
+  /** Drops one matching pair of quotes around a body - Windows cmd.exe leaves these behind. */
+  private static String stripOuterQuotes(String value) {
+    if (value.length() >= 2) {
+      char first = value.charAt(0);
+      char last = value.charAt(value.length() - 1);
+      if ((first == '\'' && last == '\'') || (first == '"' && last == '"')) {
+        return value.substring(1, value.length() - 1).trim();
+      }
+    }
+    return value;
   }
 
   public static Telemetry fromJson(String json) {
@@ -63,22 +84,45 @@ public final class TelemetryParser {
     return fromMap(values);
   }
 
-  /** Parses {@code a=1&b=2} style payloads (query strings included). */
+  /**
+   * Parses {@code a=1&b=2} and {@code a:1,b:2} payloads - query strings included, and any
+   * JSON-ish body whose quotes went missing on the way here.
+   */
   public static Telemetry fromKeyValue(String raw) {
     Map<String, Object> values = new HashMap<>();
-    String[] tokens = raw.split("[&\\r\\n;]+");
-    for (String token : tokens) {
-      int eq = token.indexOf('=');
-      if (eq <= 0) {
+    String body = raw.replace('{', ' ').replace('}', ' ').replace('[', ' ').replace(']', ' ');
+    for (String token : body.split("[,&;\\r\\n]+")) {
+      int separator = separatorIndex(token);
+      if (separator <= 0) {
         continue;
       }
-      String key = decode(token.substring(0, eq)).trim().toLowerCase(Locale.US);
-      String value = decode(token.substring(eq + 1)).trim();
-      if (!key.isEmpty()) {
+      String key = cleanKey(token.substring(0, separator));
+      String value = cleanValue(token.substring(separator + 1));
+      if (!key.isEmpty() && !value.isEmpty()) {
         values.put(key, value);
       }
     }
     return fromMap(values);
+  }
+
+  /** Position of the '=' or ':' that separates a key from its value. */
+  private static int separatorIndex(String token) {
+    int equals = token.indexOf('=');
+    int colon = token.indexOf(':');
+    if (equals >= 0 && (colon < 0 || equals < colon)) {
+      return equals;
+    }
+    return colon;
+  }
+
+  private static String cleanKey(String raw) {
+    return decode(raw).trim().replace("\"", "").replace("'", "").replace("{", "")
+        .replace("[", "").trim();
+  }
+
+  private static String cleanValue(String raw) {
+    return decode(raw).trim().replace("\"", "").replace("'", "").replace("}", "")
+        .replace("]", "").trim();
   }
 
   /** Parses {@code device,lat,lon,state[,speed,heading]} style payloads. */
@@ -86,20 +130,20 @@ public final class TelemetryParser {
     String[] tokens = raw.trim().split("[,;\\s]+");
     Map<String, Object> values = new HashMap<>();
     if (tokens.length >= 4) {
-      values.put("device", tokens[0]);
-      values.put("lat", tokens[1]);
-      values.put("lon", tokens[2]);
-      values.put("state", tokens[3]);
+      values.put("device", unglue(tokens[0]));
+      values.put("lat", unglue(tokens[1]));
+      values.put("lon", unglue(tokens[2]));
+      values.put("state", unglue(tokens[3]));
       if (tokens.length >= 5) {
-        values.put("speed", tokens[4]);
+        values.put("speed", unglue(tokens[4]));
       }
       if (tokens.length >= 6) {
-        values.put("heading", tokens[5]);
+        values.put("heading", unglue(tokens[5]));
       }
     } else if (tokens.length == 3) {
-      values.put("lat", tokens[0]);
-      values.put("lon", tokens[1]);
-      values.put("state", tokens[2]);
+      values.put("lat", unglue(tokens[0]));
+      values.put("lon", unglue(tokens[1]));
+      values.put("state", unglue(tokens[2]));
     } else {
       throw new IllegalArgumentException("expected JSON, key=value or lat,lon,state - got: " + raw);
     }
@@ -145,6 +189,12 @@ public final class TelemetryParser {
       throw new IllegalArgumentException("no device id, position or state in payload");
     }
     return t;
+  }
+
+  /** Strips a leading {@code key:} if a field arrived glued to its value. */
+  private static String unglue(String token) {
+    int colon = token.indexOf(':');
+    return colon >= 0 ? token.substring(colon + 1) : token;
   }
 
   private static String clean(String value) {
@@ -199,7 +249,8 @@ public final class TelemetryParser {
       }
       return Double.parseDouble(s);
     } catch (NumberFormatException e) {
-      throw new IllegalArgumentException("not a number: " + value);
+      throw new IllegalArgumentException("\"" + keys[0] + "\" is not a number (got \"" + value
+          + "\")");
     }
   }
 

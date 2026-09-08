@@ -268,9 +268,20 @@ public final class FleetHttpServer {
       store.ingest(telemetry, peer);
     } catch (IllegalArgumentException e) {
       String message = e.getMessage() == null ? "bad payload" : e.getMessage();
-      store.reject("bad payload from " + peer + ": " + message, peer);
-      throw e;
+      store.reject("bad payload from " + peer + ": " + message + " | body: "
+          + truncate(payload, 200), peer);
+      throw new IllegalArgumentException(message
+          + " - send JSON like {\"device\":\"esp32-01\",\"lat\":6.52,\"lon\":3.37,"
+          + "\"state\":4} (key=value, key:value and device,lat,lon,state also accepted)");
     }
+  }
+
+  private static String truncate(String value, int max) {
+    if (value == null) {
+      return "";
+    }
+    String singleLine = value.replace('\n', ' ').replace('\r', ' ').trim();
+    return singleLine.length() <= max ? singleLine : singleLine.substring(0, max) + "…";
   }
 
   private static boolean isHttpRequest(String requestLine) {

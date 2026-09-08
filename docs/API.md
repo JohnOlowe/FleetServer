@@ -35,6 +35,26 @@ you get the same view the app shows:
 Nothing external is required: if Leaflet cannot be fetched, the page silently stays on the grid map,
 so it still works when the phone is a hotspot with no internet.
 
+## Accepted payload shapes
+
+The parser is deliberately forgiving, so a shell, a serial monitor or a half-finished sketch can
+all feed it. Every one of these is the same report:
+
+```bash
+{"device":"esp32-01","lat":6.5244,"lon":3.3792,"state":4}   # JSON
+{device:esp32-01,lat:6.5244,lon:3.3792,state:4}             # JSON, quotes missing
+device:esp32-01,lat:6.5244,lon:3.3792,state:4               # key:value
+lat=6.5244&lon=3.3792&state=4                               # query string
+esp32-01,6.5244,3.3792,4                                    # ordered values
+```
+
+Surrounding quotes are stripped, so a body that `cmd.exe` passed through with its single quotes
+still works.
+
+> **Shell quoting tip.** `curl -d '{"lat":6.52}'` works in bash, zsh, PowerShell and WSL. In
+> Windows **cmd.exe** single quotes are not quotes — use double quotes and escape the inner ones:
+> `curl -X POST http://<phone-ip>:8080/telemetry -d "{\"device\":\"esp32-01\",\"lat\":6.5244,\"lon\":3.3792,\"state\":4}"`
+
 ## Report fields
 
 | Field | Aliases | Required | Notes |

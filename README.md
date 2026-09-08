@@ -80,14 +80,33 @@ Full protocol: [docs/API.md](docs/API.md).
 ## Building
 
 Every push runs **Android CI** (`.github/workflows/android.yml`): it compiles the app with
-JDK 17 on `ubuntu-latest`, runs lint, and uploads a downloadable **debug APK** artifact.
+JDK 17 on `ubuntu-latest`, runs lint, and uploads a downloadable **debug APK** artifact. Only
+debug is ever built — there is no release job.
 
 ```bash
 ./gradlew assembleDebug     # debug APK in app/build/outputs/apk/debug/
 ./gradlew lintDebug         # static checks
 ```
 
-Pushing a tag starting with `v` also builds an unsigned release APK.
+## Signing
+
+Every build is signed with the keystore kept in `keystore/`, so an APK installed from CI upgrades
+cleanly over one built in Android Studio — the signature never changes.
+
+| Property | Value |
+| --- | --- |
+| `FLEETSERVER_STORE_FILE` | `keystore/damjay_debug.keystore` |
+| `FLEETSERVER_KEY_ALIAS` | `photo-triage` |
+| `FLEETSERVER_STORE_PASSWORD` / `FLEETSERVER_KEY_PASSWORD` | in `gradle.properties` |
+
+The store is **PKCS12** (what `keytool` writes by default today), and the build detects the type
+from the file header, so a JKS file would work too. `storeType`, alias and passwords are all read
+in `app/build.gradle.kts` — nothing is hard-coded.
+
+> Heads up: the keystore and its passwords are committed here, in a public repository. That is
+> convenient but it means anyone can sign an APK as this app. If this ever ships beyond your own
+> devices, move `keystore/` out of git, keep the passwords in a GitHub Actions secret (or a local
+> `keystore.properties` that is git-ignored), and generate a fresh upload key.
 
 ## Project layout
 

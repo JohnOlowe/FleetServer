@@ -14,11 +14,8 @@
 
   <style name="AppTheme" parent="Base.AppTheme" />
 
-  <!-- Dot notation implies a parent, so the prefixes need a definition of their own. -->
-  <style name="Widget.Fleet" />
-
   <!-- Small status chips floating over the map -->
-  <style name="Widget.Fleet.Chip" parent="Widget.Material3.Chip.Assist">
+  <style name="FleetChip" parent="Widget.Material3.Chip.Assist">
     <item name="chipIconTint">@color/text_primary</item>
     <item name="chipBackgroundColor">@color/chip_bg_selector</item>
     <item name="chipStrokeWidth">0dp</item>
@@ -28,7 +25,7 @@
   </style>
 
   <!-- Device state pill -->
-  <style name="Widget.Fleet.StatePill">
+  <style name="FleetStatePill">
     <item name="android:textSize">11sp</item>
     <item name="android:textStyle">bold</item>
     <item name="android:includeFontPadding">false</item>
@@ -39,20 +36,18 @@
     <item name="android:textColor">@android:color/white</item>
   </style>
 
-  <style name="TextAppearance.Fleet" />
-
-  <style name="TextAppearance.Fleet.Mono" parent="TextAppearance.Material3.BodySmall">
+  <style name="FleetTextMono" parent="TextAppearance.Material3.BodySmall">
     <item name="fontFamily">monospace</item>
     <item name="android:fontFamily">monospace</item>
   </style>
 
-  <style name="TextAppearance.Fleet.Coords" parent="TextAppearance.Material3.BodyMedium">
+  <style name="FleetTextCoords" parent="TextAppearance.Material3.BodyMedium">
     <item name="fontFamily">monospace</item>
     <item name="android:fontFamily">monospace</item>
     <item name="android:textColor">@color/text_primary</item>
   </style>
 
-  <style name="Widget.Fleet.Card" parent="Widget.Material3.CardView.Elevated">
+  <style name="FleetCard" parent="Widget.Material3.CardView.Elevated">
     <item name="cardCornerRadius">14dp</item>
     <item name="cardBackgroundColor">@color/panel_bg</item>
   </style>

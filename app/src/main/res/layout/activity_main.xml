@@ -53,21 +53,21 @@
 
         <com.google.android.material.chip.Chip
           android:id="@+id/chip_status"
-          style="@style/Widget.Fleet.Chip"
+          style="@style/FleetChip"
           android:layout_width="wrap_content"
           android:layout_height="wrap_content"
           android:text="@string/chip_stopped" />
 
         <com.google.android.material.chip.Chip
           android:id="@+id/chip_map_mode"
-          style="@style/Widget.Fleet.Chip"
+          style="@style/FleetChip"
           android:layout_width="wrap_content"
           android:layout_height="wrap_content"
           android:text="@string/chip_map_mode_osm" />
 
         <com.google.android.material.chip.Chip
           android:id="@+id/chip_follow"
-          style="@style/Widget.Fleet.Chip"
+          style="@style/FleetChip"
           android:layout_width="wrap_content"
           android:layout_height="wrap_content"
           android:checkable="true"
@@ -75,7 +75,7 @@
 
         <com.google.android.material.chip.Chip
           android:id="@+id/chip_fit"
-          style="@style/Widget.Fleet.Chip"
+          style="@style/FleetChip"
           android:layout_width="wrap_content"
           android:layout_height="wrap_content"
           android:text="@string/chip_fit" />

@@ -17,3 +17,6 @@ secrets.h
 
 # Local sketch copies with real credentials (never commit these)
 *.local.ino
+
+# Local signing credentials (never commit these)
+keystore.properties

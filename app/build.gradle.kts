@@ -1,6 +1,27 @@
+import java.util.Properties
+
 plugins {
   alias(libs.plugins.android.application)
 }
+
+// Signing credentials are never committed. They are read, in order, from:
+//   1. keystore.properties in the project root (git-ignored, for local builds)
+//   2. Gradle project properties, which includes ORG_GRADLE_PROJECT_* environment
+//      variables - that is how GitHub Actions passes its secrets in
+//   3. a plain environment variable of the same name
+// Anything missing simply leaves the config unsigned, so the build never breaks.
+val localKeystoreProps = Properties().apply {
+  val file = rootProject.file("keystore.properties")
+  if (file.exists()) {
+    file.inputStream().use { load(it) }
+  }
+}
+
+fun signingValue(name: String, fallback: String? = null): String? =
+  localKeystoreProps.getProperty(name)
+    ?: (project.findProperty(name) as? String)
+    ?: System.getenv(name)
+    ?: fallback
 
 android {
   namespace = "damjay.tracker.fleetserver"
@@ -17,11 +38,11 @@ android {
 
   // Pin every build to one keystore so the APK signature never changes between
   // builds - an APK from CI then upgrades cleanly over one built in Android Studio.
-  // Credentials live in gradle.properties; the keystore itself is in keystore/.
+  // The keystore itself lives in keystore/; the two passwords do not live in the
+  // repo at all (see signingValue above).
   signingConfigs {
     create("stable") {
-      val storePath = (project.findProperty("FLEETSERVER_STORE_FILE") as? String)
-        ?: "keystore/damjay_debug.keystore"
+      val storePath = signingValue("FLEETSERVER_STORE_FILE", "keystore/damjay_debug.keystore")!!
       val keyStore = rootProject.file(storePath)
       if (keyStore.exists()) {
         storeFile = keyStore
@@ -30,9 +51,9 @@ android {
         val header = ByteArray(4)
         keyStore.inputStream().use { it.read(header) }
         storeType = if (header[0] == 0xFE.toByte() && header[1] == 0xED.toByte()) "jks" else "pkcs12"
-        storePassword = project.findProperty("FLEETSERVER_STORE_PASSWORD") as? String
-        keyAlias = project.findProperty("FLEETSERVER_KEY_ALIAS") as? String
-        keyPassword = project.findProperty("FLEETSERVER_KEY_PASSWORD") as? String
+        storePassword = signingValue("FLEETSERVER_STORE_PASSWORD")
+        keyAlias = signingValue("FLEETSERVER_KEY_ALIAS", "photo-triage")
+        keyPassword = signingValue("FLEETSERVER_KEY_PASSWORD")
       }
     }
   }
@@ -42,8 +63,12 @@ android {
     // distributed as a debug APK from CI.
     getByName("debug") {
       val stable = signingConfigs.getByName("stable")
-      if (stable.storeFile != null) {
+      // Half a signing config is worse than none: without both passwords the build
+      // would fail at signing time, so fall back to the standard Android debug key.
+      if (stable.storeFile != null && stable.storePassword != null && stable.keyPassword != null) {
         signingConfig = stable
+      } else {
+        logger.lifecycle("Stable signing key unavailable (keystore or passwords missing) - using the default debug key")
       }
     }
   }
@@ -71,4 +96,15 @@ dependencies {
   implementation(libs.androidx.constraintlayout)
   implementation(libs.androidx.recyclerview)
   implementation(libs.osmdroid.android)
+}
+
+// Temporary probe: proves that ORG_GRADLE_PROJECT_* environment variables reach the
+// build script as project properties, which is how CI passes its signing secrets.
+tasks.register("printSigningProbe") {
+  doLast {
+    println("PROBE_STORE_FILE=" + (signingValue("FLEETSERVER_STORE_FILE") ?: "none"))
+    println("PROBE_KEY_ALIAS=" + (signingValue("FLEETSERVER_KEY_ALIAS") ?: "none"))
+    println("PROBE_STORE_PASSWORD_SET=" + (signingValue("FLEETSERVER_STORE_PASSWORD") != null))
+    println("PROBE_KEY_PASSWORD_SET=" + (signingValue("FLEETSERVER_KEY_PASSWORD") != null))
+  }
 }

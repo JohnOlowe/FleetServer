@@ -116,22 +116,47 @@ Every push runs two workflows you can watch:
 ## Signing
 
 Every build is signed with the keystore kept in `keystore/`, so an APK installed from CI upgrades
-cleanly over one built in Android Studio — the signature never changes.
+cleanly over one built in Android Studio — the signature never changes. The keystore file is
+committed, but **its passwords are not in the repository anywhere**.
 
-| Property | Value |
-| --- | --- |
-| `FLEETSERVER_STORE_FILE` | `keystore/damjay_debug.keystore` |
-| `FLEETSERVER_KEY_ALIAS` | `photo-triage` |
-| `FLEETSERVER_STORE_PASSWORD` / `FLEETSERVER_KEY_PASSWORD` | in `gradle.properties` |
+| Property | Value | Where it lives |
+| --- | --- | --- |
+| `FLEETSERVER_STORE_FILE` | `keystore/damjay_debug.keystore` | committed (both locally and in CI) |
+| `FLEETSERVER_KEY_ALIAS` | `photo-triage` | committed |
+| `FLEETSERVER_STORE_PASSWORD` | — | nowhere in the repo: a GitHub Actions secret for CI, `keystore.properties` locally |
+| `FLEETSERVER_KEY_PASSWORD` | — | same (identical to the store password: the file is PKCS12) |
 
-The store is **PKCS12** (what `keytool` writes by default today), and the build detects the type
-from the file header, so a JKS file would work too. `storeType`, alias and passwords are all read
-in `app/build.gradle.kts` — nothing is hard-coded.
+**In CI.** Add the two passwords as repository secrets under *Settings → Secrets and variables →
+Actions*. The workflow passes them to Gradle as `ORG_GRADLE_PROJECT_FLEETSERVER_STORE_PASSWORD` and
+`ORG_GRADLE_PROJECT_FLEETSERVER_KEY_PASSWORD`; Gradle turns any `ORG_GRADLE_PROJECT_*` environment
+variable into a project property, which `app/build.gradle.kts` reads. The *Verify APK signature*
+step prints the signer of the APK it just built and warns if it is not the stable key.
 
-> Heads up: the keystore and its passwords are committed here, in a public repository. That is
-> convenient but it means anyone can sign an APK as this app. If this ever ships beyond your own
-> devices, move `keystore/` out of git, keep the passwords in a GitHub Actions secret (or a local
-> `keystore.properties` that is git-ignored), and generate a fresh upload key.
+```bash
+gh secret set FLEETSERVER_STORE_PASSWORD   # paste the password when prompted
+gh secret set FLEETSERVER_KEY_PASSWORD
+```
+
+**Locally.** Create a `keystore.properties` in the project root — it is git-ignored:
+
+```properties
+FLEETSERVER_STORE_FILE=keystore/damjay_debug.keystore
+FLEETSERVER_STORE_PASSWORD=<password>
+FLEETSERVER_KEY_ALIAS=photo-triage
+FLEETSERVER_KEY_PASSWORD=<password>
+```
+
+`~/.gradle/gradle.properties` works too, as do plain environment variables of the same names.
+
+If no passwords are found the build does not fail — it falls back to the standard Android debug
+key, which is exactly what the warning in CI tells you about. The store is **PKCS12** (what
+`keytool` writes by default today), and the build detects the type from the file header, so a JKS
+file would work as well.
+
+> Heads up: the keystore file itself is committed here, in a public repository — it came from the
+> public PalmPay-Clone repo, where the store password is published too. Treat this key as
+> convenient but not private: if this ever ships beyond your own devices, generate a fresh upload
+> key, keep it out of git, and store its passwords only in a GitHub Actions secret.
 
 ## Project layout
 

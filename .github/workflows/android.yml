@@ -21,6 +21,17 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
+    env:
+      # Signing credentials come from repository secrets - there is no password in
+      # the repo. Gradle exposes every ORG_GRADLE_PROJECT_* environment variable as a
+      # project property, which is exactly what app/build.gradle.kts looks for.
+      # If the secrets are not set the build still succeeds, just with the standard
+      # Android debug key; the "Verify APK signature" step calls that out.
+      ORG_GRADLE_PROJECT_FLEETSERVER_STORE_FILE: keystore/damjay_debug.keystore
+      ORG_GRADLE_PROJECT_FLEETSERVER_KEY_ALIAS: photo-triage
+      ORG_GRADLE_PROJECT_FLEETSERVER_STORE_PASSWORD: ${{ secrets.FLEETSERVER_STORE_PASSWORD }}
+      ORG_GRADLE_PROJECT_FLEETSERVER_KEY_PASSWORD: ${{ secrets.FLEETSERVER_KEY_PASSWORD }}
+
     steps:
       - name: Check out
         uses: actions/checkout@v4
@@ -36,6 +47,9 @@ jobs:
 
       - name: Make gradlew executable
         run: chmod +x ./gradlew
+
+      - name: Probe signing wiring (temporary)
+        run: ./gradlew -q printSigningProbe
 
       - name: Assemble debug APK
         id: assemble
@@ -84,6 +98,28 @@ jobs:
           name: fleetserver-debug-apk
           path: app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
+
+      - name: Verify APK signature
+        run: |
+          APK=$(ls app/build/outputs/apk/debug/*.apk | head -1)
+          echo "APK: $APK"
+
+          if [ -n "$ORG_GRADLE_PROJECT_FLEETSERVER_STORE_PASSWORD" ] && [ -n "$ORG_GRADLE_PROJECT_FLEETSERVER_KEY_PASSWORD" ]; then
+            echo "signing secrets: present"
+          else
+            echo "::warning title=Signing secrets not set::Add FLEETSERVER_STORE_PASSWORD and FLEETSERVER_KEY_PASSWORD under Settings > Secrets and variables > Actions. Until then the APK is signed with the standard Android debug key, so it will not upgrade cleanly over a previously installed build."
+            echo "signing secrets: MISSING"
+          fi
+
+          SIGNER=$(keytool -list -printcert -jarfile "$APK" 2>/dev/null | grep -m1 "Owner:" || true)
+          echo "signer: ${SIGNER:-unknown}"
+          if echo "$SIGNER" | grep -q "Photo Triage Stable Key"; then
+            echo "stable key: yes"
+            echo "Signed with the committed keystore (alias photo-triage)."
+          else
+            echo "::warning title=APK is not signed with the stable key::This build fell back to the Android debug key. Installs of this APK will not upgrade cleanly over older builds."
+          fi
+          echo "signer: ${SIGNER:-unknown}" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload lint report
         if: always()

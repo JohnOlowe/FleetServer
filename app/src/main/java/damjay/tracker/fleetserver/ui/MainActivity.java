@@ -225,7 +225,7 @@ public class MainActivity extends AppCompatActivity
     MenuItem toggle = binding.toolbar.getMenu().findItem(R.id.action_toggle);
     if (toggle != null) {
       toggle.setTitle(running ? R.string.action_stop : R.string.action_start);
-      toggle.setIcon(running ? R.drawable.ic_stat_stop : R.drawable.ic_play_stop);
+      toggle.setIcon(running ? R.drawable.ic_stop : R.drawable.ic_play_stop);
     }
 
     binding.chipStatus.setText(running

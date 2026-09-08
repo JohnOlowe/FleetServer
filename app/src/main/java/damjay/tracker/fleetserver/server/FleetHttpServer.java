@@ -5,6 +5,7 @@ import android.util.Log;
 import androidx.annotation.NonNull;
 
 import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.ByteArrayOutputStream;
@@ -305,7 +306,7 @@ public final class FleetHttpServer {
     out.flush();
   }
 
-  private String devicesJson() {
+  private String devicesJson() throws JSONException {
     List<TrackedDevice> devices = store.snapshot();
     JSONArray array = new JSONArray();
     for (TrackedDevice device : devices) {
@@ -318,7 +319,7 @@ public final class FleetHttpServer {
     return root.toString();
   }
 
-  private String deviceJson(String id) {
+  private String deviceJson(String id) throws JSONException {
     TrackedDevice device = store.get(id);
     JSONObject root = new JSONObject();
     if (device == null) {
@@ -330,7 +331,7 @@ public final class FleetHttpServer {
     return root.toString();
   }
 
-  private JSONObject summary(TrackedDevice device, boolean withTrail) {
+  private JSONObject summary(TrackedDevice device, boolean withTrail) throws JSONException {
     JSONObject o = new JSONObject();
     o.put("id", device.id);
     o.put("name", device.displayName());
@@ -388,7 +389,7 @@ public final class FleetHttpServer {
     return o;
   }
 
-  private String logJson() {
+  private String logJson() throws JSONException {
     JSONArray array = new JSONArray();
     for (FleetStore.LogEntry entry : store.logs()) {
       JSONObject o = new JSONObject();

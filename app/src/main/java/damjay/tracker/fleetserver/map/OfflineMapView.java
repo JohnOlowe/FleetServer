@@ -72,7 +72,6 @@ public class OfflineMapView extends View {
 
   public OfflineMapView(Context context, @Nullable AttributeSet attrs) {
     super(context, attrs);
-    ContextCompat.getColor(context, R.color.map_grid);
     gridPaint.setColor(ContextCompat.getColor(context, R.color.map_grid));
     gridPaint.setStrokeWidth(1.2f);
     gridMinorPaint.setColor(ContextCompat.getColor(context, R.color.map_grid_minor));

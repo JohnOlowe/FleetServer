@@ -46,7 +46,12 @@ public final class TelemetryParser {
   }
 
   public static Telemetry fromJson(String json) {
-    JSONObject object = new JSONObject(json);
+    JSONObject object;
+    try {
+      object = new JSONObject(json);
+    } catch (org.json.JSONException e) {
+      throw new IllegalArgumentException("invalid JSON: " + e.getMessage());
+    }
     Map<String, Object> values = new HashMap<>();
     Iterator<String> keys = object.keys();
     while (keys.hasNext()) {

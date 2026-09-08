@@ -7,8 +7,6 @@ import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.RectF;
 
-import androidx.core.graphics.drawable.DrawableCompat;
-
 /**
  * Draws the map pin used for a tracker. Shared by the OSM markers (rendered into a bitmap) and the
  * offline map (drawn straight onto the canvas), so both look identical.
@@ -90,13 +88,4 @@ public final class PinPainter {
     canvas.restore();
   }
 
-  /** Wraps a pin bitmap into a drawable, tinting is not applied (the bitmap is already coloured). */
-  public static android.graphics.drawable.Drawable pinDrawable(Context context, int colorArgb,
-      boolean faded) {
-    android.graphics.drawable.BitmapDrawable drawable =
-        new android.graphics.drawable.BitmapDrawable(context.getResources(),
-            createPinBitmap(context, colorArgb, faded));
-    DrawableCompat.wrap(drawable);
-    return drawable;
-  }
 }

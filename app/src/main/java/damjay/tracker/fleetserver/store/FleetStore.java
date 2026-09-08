@@ -263,6 +263,17 @@ public class FleetStore {
     mainHandler.postDelayed(saveTask, 2000L);
   }
 
+  /** org.json refuses NaN/Infinity, so missing values are simply left out. */
+  private static void putDouble(JSONObject object, String key, double value) {
+    if (!Double.isNaN(value) && !Double.isInfinite(value)) {
+      try {
+        object.put(key, value);
+      } catch (Exception ignored) {
+        // never fatal for persistence
+      }
+    }
+  }
+
   private synchronized String toJson() {
     try {
       JSONObject root = new JSONObject();
@@ -281,15 +292,15 @@ public class FleetStore {
           JSONObject last = new JSONObject();
           last.put("deviceId", t.deviceId);
           last.put("name", t.name);
-          last.put("latitude", t.latitude);
-          last.put("longitude", t.longitude);
+          putDouble(last, "latitude", t.latitude);
+          putDouble(last, "longitude", t.longitude);
           last.put("state", t.state.code);
-          last.put("speed", t.speed);
-          last.put("heading", t.heading);
-          last.put("altitude", t.altitude);
-          last.put("accuracy", t.accuracy);
-          last.put("hdop", t.hdop);
-          last.put("battery", t.battery);
+          putDouble(last, "speed", t.speed);
+          putDouble(last, "heading", t.heading);
+          putDouble(last, "altitude", t.altitude);
+          putDouble(last, "accuracy", t.accuracy);
+          putDouble(last, "hdop", t.hdop);
+          putDouble(last, "battery", t.battery);
           last.put("satellites", t.satellites);
           last.put("rssi", t.rssi);
           last.put("deviceTime", t.deviceTime);

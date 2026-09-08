@@ -102,21 +102,36 @@ jobs:
           echo "APK: $APK"
 
           if [ -n "$ORG_GRADLE_PROJECT_FLEETSERVER_STORE_PASSWORD" ] && [ -n "$ORG_GRADLE_PROJECT_FLEETSERVER_KEY_PASSWORD" ]; then
+            echo "::notice title=Signing secrets::present"
             echo "signing secrets: present"
           else
-            echo "::warning title=Signing secrets not set::Add FLEETSERVER_STORE_PASSWORD and FLEETSERVER_KEY_PASSWORD under Settings > Secrets and variables > Actions. Until then the APK is signed with the standard Android debug key, so it will not upgrade cleanly over a previously installed build."
+            echo "::warning title=Signing secrets::MISSING - add FLEETSERVER_STORE_PASSWORD and FLEETSERVER_KEY_PASSWORD under Settings > Secrets and variables > Actions. Until then the APK is signed with the standard Android debug key and will not upgrade cleanly over an older build."
             echo "signing secrets: MISSING"
           fi
 
-          SIGNER=$(keytool -list -printcert -jarfile "$APK" 2>/dev/null | grep -m1 "Owner:" || true)
-          echo "signer: ${SIGNER:-unknown}"
-          if echo "$SIGNER" | grep -q "Photo Triage Stable Key"; then
-            echo "stable key: yes"
-            echo "Signed with the committed keystore (alias photo-triage)."
-          else
-            echo "::warning title=APK is not signed with the stable key::This build fell back to the Android debug key. Installs of this APK will not upgrade cleanly over older builds."
+          # keytool prints the signer of a signed jar, and an APK is one. -printcert
+          # is the command; pairing it with -list makes keytool reject the whole line.
+          KEYTOOL_OUT=$(keytool -printcert -jarfile "$APK" 2>&1 || true)
+          echo "$KEYTOOL_OUT"
+          SIGNER_OUT="$KEYTOOL_OUT"
+
+          APKSIGNER=$(ls "$ANDROID_HOME"/build-tools/*/apksigner 2>/dev/null | head -1 || true)
+          if [ -n "$APKSIGNER" ]; then
+            echo "apksigner: $APKSIGNER"
+            APKSIGNER_OUT=$("$APKSIGNER" verify --print-certs "$APK" 2>&1 || true)
+            echo "$APKSIGNER_OUT"
+            SIGNER_OUT="$SIGNER_OUT
+          $APKSIGNER_OUT"
           fi
-          echo "signer: ${SIGNER:-unknown}" >> "$GITHUB_STEP_SUMMARY"
+
+          if echo "$SIGNER_OUT" | grep -q "Photo Triage Stable Key"; then
+            echo "::notice title=APK signature::Signed with the committed keystore (alias photo-triage). This APK upgrades cleanly over older builds."
+            echo "signed with the stable key: yes"
+          else
+            echo "::warning title=APK signature::NOT signed with the stable key - this build fell back to the Android debug key, so it will not upgrade cleanly over an older build."
+            echo "signed with the stable key: no"
+          fi
+          echo "APK: $APK" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload lint report
         if: always()

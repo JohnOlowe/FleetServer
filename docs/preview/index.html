@@ -1,0 +1,320 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FleetServer — UI preview</title>
+<style>
+  :root {
+    --bg: #080e15;
+    --panel: #121c27;
+    --panel-2: #16222d;
+    --border: #1f2d3b;
+    --text: #e6edf3;
+    --muted: #93a4b6;
+    --teal: #12bfa5;
+    --amber: #ffb02e;
+    --op: #4ade80;
+    --nf: #ffb44d;
+    --of: #7cb0ff;
+    --gn: #ff6b6f;
+    --un: #9aa8b8;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 28px; background: radial-gradient(1200px 700px at 20% -10%, #10303a 0%, var(--bg) 55%);
+    color: var(--text); font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  header { display: flex; align-items: center; gap: 14px; margin-bottom: 22px; }
+  header svg { width: 44px; height: 44px; }
+  h1 { font-size: 22px; margin: 0; }
+  header p { margin: 0; color: var(--muted); font-size: 13px; }
+  .wrap { display: flex; gap: 32px; flex-wrap: wrap; align-items: flex-start; }
+  .phone {
+    width: 372px; height: 760px; background: var(--panel); border: 1px solid var(--border);
+    border-radius: 34px; padding: 10px; box-shadow: 0 30px 70px rgba(0,0,0,.55); display: flex; flex-direction: column;
+    overflow: hidden; flex: 0 0 auto;
+  }
+  .screen { border-radius: 26px; overflow: hidden; background: #0b131c; flex: 1; display: flex; flex-direction: column; }
+  .toolbar { display: flex; align-items: center; gap: 10px; padding: 12px 14px; background: var(--panel); border-bottom: 1px solid var(--border); }
+  .toolbar svg { width: 26px; height: 26px; }
+  .toolbar .t { font-weight: 650; font-size: 15px; }
+  .toolbar .s { color: var(--muted); font-size: 11.5px; }
+  .toolbar .spacer { flex: 1; }
+  .dots { color: var(--muted); letter-spacing: 2px; }
+  .mapwrap { position: relative; height: 400px; background: #0e1723; }
+  .mapwrap svg { width: 100%; height: 100%; display: block; }
+  .chips { position: absolute; top: 10px; left: 10px; right: 10px; display: flex; gap: 6px; flex-wrap: wrap; }
+  .chip {
+    background: rgba(27,40,54,.92); border: 1px solid var(--border); color: var(--text);
+    font-size: 11.5px; padding: 5px 10px; border-radius: 999px; backdrop-filter: blur(4px);
+  }
+  .chip.on { background: var(--teal); color: #04231e; border-color: var(--teal); font-weight: 600; }
+  .attrib { position: absolute; right: 10px; bottom: 10px; font-size: 9.5px; color: var(--muted); background: rgba(27,40,54,.8); padding: 2px 6px; border-radius: 6px; }
+  .panel { background: var(--panel); border-top: 1px solid var(--border); border-radius: 18px 18px 0 0; margin-top: -14px; padding: 12px 10px 10px; }
+  .panel .head { display: flex; align-items: baseline; padding: 0 6px 8px; }
+  .panel .head b { font-size: 14px; }
+  .panel .head span { color: var(--muted); font-size: 11.5px; margin-left: auto; }
+  .card { display: flex; align-items: center; gap: 10px; background: var(--panel-2); border: 1px solid var(--border); border-radius: 14px; padding: 10px 12px; margin-bottom: 8px; }
+  .bar { width: 4px; height: 38px; border-radius: 3px; }
+  .card .name { font-size: 13.5px; font-weight: 600; }
+  .card .coords { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11.5px; color: var(--text); }
+  .card .meta { font-size: 10.5px; color: var(--muted); }
+  .pill { font-size: 10.5px; font-weight: 700; color: #08131c; border-radius: 999px; padding: 3px 9px; margin-left: auto; white-space: nowrap; }
+  .side { max-width: 560px; flex: 1 1 380px; }
+  .card-box { background: var(--panel); border: 1px solid var(--border); border-radius: 16px; padding: 16px 18px; margin-bottom: 16px; }
+  h2 { font-size: 15px; margin: 0 0 10px; }
+  p.note { color: var(--muted); font-size: 13px; margin: 8px 0 0; }
+  code, pre { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; }
+  pre { background: #0b131c; border: 1px solid var(--border); border-radius: 12px; padding: 12px; overflow-x: auto; margin: 8px 0 0; color: #b9e6dd; }
+  .flow { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 12.5px; color: var(--muted); }
+  .flow b { color: var(--text); font-weight: 600; }
+  .flow .arrow { color: var(--teal); }
+  .btn {
+    background: var(--teal); color: #04231e; border: 0; border-radius: 10px; padding: 9px 14px;
+    font-size: 13px; font-weight: 650; cursor: pointer;
+  }
+  .btn.ghost { background: transparent; color: var(--text); border: 1px solid var(--border); }
+  .btn:active { transform: translateY(1px); }
+  table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  td { padding: 5px 6px; border-bottom: 1px solid var(--border); }
+  td:first-child { width: 34px; font-family: ui-monospace, monospace; color: var(--muted); }
+  .log { height: 132px; overflow: auto; background: #0b131c; border: 1px solid var(--border); border-radius: 12px; padding: 8px 10px; font-family: ui-monospace, monospace; font-size: 11px; color: var(--muted); }
+  .log div { padding: 1px 0; }
+  .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; }
+  footer { color: var(--muted); font-size: 12px; margin-top: 24px; }
+</style>
+</head>
+<body>
+
+<header>
+  <svg viewBox="0 0 64 64" aria-hidden="true">
+    <defs>
+      <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stop-color="#0a1929"/><stop offset="1" stop-color="#0e5063"/>
+      </linearGradient>
+    </defs>
+    <rect x="0" y="0" width="64" height="64" rx="16" fill="url(#g)"/>
+    <path d="M32 15c-6.6 0-12 5.4-12 12 0 8.4 10.2 19.6 11 20.5.5.6 1.5.6 2 0 .8-.9 11-12.1 11-20.5 0-6.6-5.4-12-12-12zm0 16.4a4.4 4.4 0 1 1 0-8.8 4.4 4.4 0 0 1 0 8.8z" fill="#12bfa5"/>
+    <path d="M20 27a12 12 0 0 0 24 0" fill="none" stroke="#ffb02e" stroke-width="2.4" stroke-linecap="round" opacity=".95"/>
+    <path d="M14 23a18 18 0 0 0 36 0" fill="none" stroke="#ffb02e" stroke-width="2.2" stroke-linecap="round" opacity=".6"/>
+    <path d="M8.5 19a23.5 23.5 0 0 0 47 0" fill="none" stroke="#ffb02e" stroke-width="2" stroke-linecap="round" opacity=".35"/>
+  </svg>
+  <div>
+    <h1>FleetServer — live UI preview</h1>
+    <p>ESP32 → phone (Wi-Fi or hotspot) → map. Press <b>Simulate a packet</b> to watch a tracker report in.</p>
+  </div>
+</header>
+
+<div class="wrap">
+  <!-- ---------------- phone mock ---------------- -->
+  <div class="phone">
+    <div class="screen">
+      <div class="toolbar">
+        <svg viewBox="0 0 64 64" aria-hidden="true">
+          <rect x="0" y="0" width="64" height="64" rx="14" fill="#0e5063"/>
+          <path d="M32 15c-6.6 0-12 5.4-12 12 0 8.4 10.2 19.6 11 20.5.5.6 1.5.6 2 0 .8-.9 11-12.1 11-20.5 0-6.6-5.4-12-12-12zm0 16.4a4.4 4.4 0 1 1 0-8.8 4.4 4.4 0 0 1 0 8.8z" fill="#12bfa5"/>
+          <path d="M20 27a12 12 0 0 0 24 0" fill="none" stroke="#ffb02e" stroke-width="2.4" stroke-linecap="round"/>
+        </svg>
+        <div>
+          <div class="t">FleetServer</div>
+          <div class="s" id="subtitle">Listening on port 8080 · 0 packets</div>
+        </div>
+        <div class="spacer"></div>
+        <div class="dots">⋮</div>
+      </div>
+
+      <div class="mapwrap">
+        <svg id="map" viewBox="0 0 352 400" preserveAspectRatio="xMidYMid slice">
+          <defs>
+            <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+              <path d="M40 0H0V40" fill="none" stroke="#22323f" stroke-width="1"/>
+            </pattern>
+          </defs>
+          <rect width="352" height="400" fill="#0e1723"/>
+          <rect width="352" height="400" fill="url(#grid)"/>
+          <g id="labels"></g>
+          <g id="trails"></g>
+          <g id="pins"></g>
+        </svg>
+        <div class="chips">
+          <span class="chip on" id="chip-status">Listening :8080</span>
+          <span class="chip" id="chip-mode">Map: OSM tiles</span>
+          <span class="chip" id="chip-follow">Follow</span>
+          <span class="chip" id="chip-fit">Fit all</span>
+        </div>
+        <div class="attrib">© OpenStreetMap contributors</div>
+      </div>
+
+      <div class="panel">
+        <div class="head"><b>Devices</b><span id="count">0 tracked</span></div>
+        <div id="list"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ---------------- side info ---------------- -->
+  <div class="side">
+    <div class="card-box">
+      <h2>How it works</h2>
+      <div class="flow">
+        <b>ESP32 + GPS</b> <span class="arrow">──▶</span>
+        <b>same Wi-Fi / phone hotspot</b> <span class="arrow">──▶</span>
+        <b>phone :8080</b> <span class="arrow">──▶</span>
+        <b>map + fleet list</b>
+      </div>
+      <p class="note">The phone is the server. It runs as a foreground service, holds a Wi-Fi lock,
+      and works with no internet at all (the offline map draws its own coordinate grid).</p>
+    </div>
+
+    <div class="card-box">
+      <h2>What the ESP32 sends</h2>
+      <pre>POST /telemetry
+{"device":"esp32-01","lat":7.377500,"lon":3.947000,
+ "state":4,"sats":9,"speed":12.30,"heading":42.0}</pre>
+      <p class="note">Also accepted: <code>GET /telemetry?lat=…&amp;lon=…&amp;state=…</code> and a
+      raw TCP line <code>esp32-01,7.3775,3.9470,4</code>. See <code>docs/API.md</code>.</p>
+    </div>
+
+    <div class="card-box">
+      <h2>Device states</h2>
+      <table>
+        <tr><td>1</td><td><span class="dot" style="background:var(--gn)"></span>GPS device not found</td></tr>
+        <tr><td>2</td><td><span class="dot" style="background:var(--nf)"></span>No GPS fix</td></tr>
+        <tr><td>3</td><td><span class="dot" style="background:var(--of)"></span>Offline mode (buffered fix)</td></tr>
+        <tr><td>4</td><td><span class="dot" style="background:var(--op)"></span>Operational</td></tr>
+      </table>
+    </div>
+
+    <div class="card-box">
+      <h2>Try it</h2>
+      <button class="btn" id="send">Simulate a packet</button>
+      <button class="btn ghost" id="toggle">Toggle map source</button>
+      <button class="btn ghost" id="reset">Reset</button>
+      <div class="log" id="log" style="margin-top:12px"></div>
+    </div>
+  </div>
+</div>
+
+<footer>This page is a static mock of the app (no build, no network). The real app lives in <code>app/</code>; the firmware in <code>esp32/FleetClient/</code>.</footer>
+
+<script>
+const COLORS = {1:'#ff6b6f', 2:'#ffb44d', 3:'#7cb0ff', 4:'#4ade80', 0:'#9aa8b8'};
+const NAMES  = {1:'GPS device not found', 2:'No GPS fix', 3:'Offline mode', 4:'Operational', 0:'Unknown'};
+const SCALE  = 26000;          // pixels per degree, enough for a neighbourhood view
+const CENTER = {lat: 7.3775, lon: 3.9470};
+const W = 352, H = 400;
+
+let devices = [];
+let packets = 0;
+let tick = 0;
+
+function xOf(lon) { return W / 2 + (lon - CENTER.lon) * SCALE; }
+function yOf(lat) { return H / 2 - (lat - CENTER.lat) * SCALE; }
+
+function gridLabels() {
+  let out = '';
+  for (let i = 1; i < 8; i++) {
+    const lon = CENTER.lon - 0.007 + i * 0.002;
+    const lat = CENTER.lat - 0.006 + i * 0.0017;
+    out += `<text x="${xOf(lon) + 3}" y="14" fill="#7d8fa3" font-size="9">${lon.toFixed(4)}°E</text>`;
+    out += `<text x="4" y="${yOf(lat) - 4}" fill="#7d8fa3" font-size="9">${lat.toFixed(4)}°N</text>`;
+  }
+  document.getElementById('labels').innerHTML = out;
+}
+
+function pin(x, y, color, label, state) {
+  return `
+    <g>
+      <path d="M${x} ${y} L${x - 8} ${y - 17} A 12 12 0 1 1 ${x + 8} ${y - 17} Z"
+            fill="${color}" stroke="#fff" stroke-width="1.5" stroke-opacity=".85"/>
+      <circle cx="${x}" cy="${y - 24}" r="4.6" fill="#fff"/>
+      <rect x="${x - (label.length * 3.2 + 6)}" y="${y - 52}" width="${label.length * 6.4 + 12}" height="16" rx="6"
+            fill="#16222d" fill-opacity=".85"/>
+      <text x="${x}" y="${y - 40}" text-anchor="middle" fill="${color}" font-size="10.5"
+            font-family="system-ui, sans-serif">${label}</text>
+    </g>`;
+}
+
+function render() {
+  // trails
+  document.getElementById('trails').innerHTML = devices.map(d => {
+    if (d.trail.length < 2) return '';
+    const pts = d.trail.map(p => `${xOf(p[1])},${yOf(p[0])}`).join(' ');
+    return `<polyline points="${pts}" fill="none" stroke="${COLORS[d.state]}" stroke-opacity=".75"
+             stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>`;
+  }).join('');
+
+  // pins
+  document.getElementById('pins').innerHTML = devices
+    .filter(d => d.state !== 1 && d.state !== 2)
+    .map(d => pin(xOf(d.lon), yOf(d.lat), COLORS[d.state], d.id, d.state)).join('');
+
+  // list
+  document.getElementById('list').innerHTML = devices.map(d => `
+    <div class="card">
+      <div class="bar" style="background:${COLORS[d.state]}"></div>
+      <div>
+        <div class="name">${d.id}</div>
+        <div class="coords">${d.state === 1 || d.state === 2 ? 'No position'
+          : d.lat.toFixed(6) + ', ' + d.lon.toFixed(6)}</div>
+        <div class="meta">${d.packets} packets · ${d.age}</div>
+      </div>
+      <span class="pill" style="background:${COLORS[d.state]}">${NAMES[d.state]}</span>
+    </div>`).join('') || '<div class="card"><div class="name" style="color:#93a4b6">No tracker has reported yet</div></div>';
+
+  document.getElementById('count').textContent = devices.length + ' tracked';
+  document.getElementById('subtitle').textContent = `Listening on port 8080 · ${packets} packets`;
+}
+
+function log(line) {
+  const box = document.getElementById('log');
+  const time = new Date().toTimeString().slice(0, 8);
+  box.insertAdjacentHTML('beforeend', `<div>${time}  ${line}</div>`);
+  box.scrollTop = box.scrollHeight;
+  while (box.children.length > 60) box.removeChild(box.firstChild);
+}
+
+function send() {
+  tick++;
+  packets++;
+  const cycle = [4, 4, 4, 4, 2, 3, 1];
+  const state = cycle[tick % cycle.length];
+
+  let d = devices.find(x => x.id === 'esp32-01');
+  if (!d) { d = {id: 'esp32-01', lat: CENTER.lat, lon: CENTER.lon, state: 4, packets: 0, trail: [], age: 'just now'}; devices.push(d); }
+  if (tick === 6) { devices.push({id: 'esp32-02', lat: CENTER.lat - 0.0022, lon: CENTER.lon + 0.0026, state: 3, packets: 1, trail: [], age: 'just now'}); log('[in]  esp32-02 7.375300,3.949600 [OFFLINE]'); }
+
+  if (state === 4 || state === 3) {
+    d.lat += (Math.random() - 0.5) * 0.0016;
+    d.lon += (Math.random() - 0.5) * 0.0016;
+    d.trail.push([d.lat, d.lon]);
+    if (d.trail.length > 120) d.trail.shift();
+  }
+  d.state = state;
+  d.packets++;
+  d.age = 'just now';
+
+  log(`[in]  ${d.id} ${state === 1 || state === 2 ? '--,--' : d.lat.toFixed(6) + ',' + d.lon.toFixed(6)} [${NAMES[state].toUpperCase().replace(/ /g, '_')}]`);
+  render();
+}
+
+document.getElementById('send').onclick = send;
+document.getElementById('reset').onclick = () => { devices = []; packets = 0; tick = 0; document.getElementById('log').innerHTML = ''; render(); };
+document.getElementById('toggle').onclick = (e) => {
+  const chip = document.getElementById('chip-mode');
+  const osm = chip.textContent.includes('OSM');
+  chip.textContent = osm ? 'Map: offline' : 'Map: OSM tiles';
+  document.querySelector('.attrib').style.visibility = osm ? 'hidden' : 'visible';
+  document.querySelector('#map rect:nth-of-type(2)').style.opacity = osm ? '1' : '1';
+  log('[sys] map source → ' + (osm ? 'offline grid' : 'OSM tiles'));
+};
+
+gridLabels();
+render();
+log('[sys] listening on port 8080');
+// a first packet so the screen is not empty
+send();
+</script>
+</body>
+</html>

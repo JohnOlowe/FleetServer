@@ -69,7 +69,13 @@ jobs:
           git push -f origin "HEAD:ci-logs"
           exit 1
 
+      - name: Remove stale build-error log
+        if: steps.assemble.outcome == 'success'
+        continue-on-error: true
+        run: git push origin --delete ci-logs
+
       - name: Run lint
+        if: steps.assemble.outcome == 'success'
         run: ./gradlew lintDebug
 
       - name: Upload debug APK

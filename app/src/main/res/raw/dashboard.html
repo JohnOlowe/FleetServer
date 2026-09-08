@@ -310,9 +310,11 @@
   window.addEventListener("mouseup", function () { drag = null; canvas.style.cursor = "grab"; });
   window.addEventListener("mousemove", function (e) {
     if (!drag) return;
-    var r = canvas.getBoundingClientRect();
-    view.lon = lonOf(drag.x - r.left + (drag.x - e.clientX) * -1);
-    view.lat = latOf(drag.y - r.top + (drag.y - e.clientY) * -1);
+    // Keep the grabbed point under the cursor: the new centre is whatever used to sit
+    // half a screen away from the drag delta.
+    var dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+    view.lon = lonOf(W / 2 - dx);
+    view.lat = latOf(H / 2 - dy);
     drag = {x: e.clientX, y: e.clientY};
     userMoved = true;
     drawGridMap();
@@ -323,7 +325,7 @@
     var mx = e.clientX - r.left, my = e.clientY - r.top;
     var bLat = latOf(my), bLon = lonOf(mx);
     view.zoom = clampZoom(view.zoom + (e.deltaY < 0 ? 0.6 : -0.6));
-    view.lat = latOf(my) ? view.lat + (bLat - latOf(my)) : view.lat;
+    view.lat = view.lat + (bLat - latOf(my));
     view.lon = view.lon + (bLon - lonOf(mx));
     userMoved = true;
     drawGridMap();

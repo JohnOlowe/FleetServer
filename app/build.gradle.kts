@@ -103,15 +103,3 @@ dependencies {
   implementation(libs.androidx.recyclerview)
   implementation(libs.osmdroid.android)
 }
-
-// Temporary probe: proves that ORG_GRADLE_PROJECT_* environment variables reach the
-// build script as project properties, which is how CI passes its signing secrets.
-tasks.register("printSigningProbe") {
-  doLast {
-    println("PROBE_STORE_FILE=" + (signingValue("FLEETSERVER_STORE_FILE") ?: "none"))
-    println("PROBE_KEY_ALIAS=" + (signingValue("FLEETSERVER_KEY_ALIAS") ?: "none"))
-    println("PROBE_STORE_PASSWORD_SET=" + (signingValue("FLEETSERVER_STORE_PASSWORD") != null))
-    println("PROBE_KEY_PASSWORD_SET=" + (signingValue("FLEETSERVER_KEY_PASSWORD") != null))
-    println("PROBE_ENV_VALUE=" + (signingValue("FLEETSERVER_PROBE") ?: "none"))
-  }
-}

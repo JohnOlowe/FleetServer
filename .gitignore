@@ -11,3 +11,6 @@ out/
 
 .externalNativeBuild
 .cxx/
+
+# Local credentials for the ESP32 sketches
+secrets.h

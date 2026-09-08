@@ -292,58 +292,82 @@ void parseNmea(const char *line) {
   gpsDeviceSeen = true;
   lastGpsByteAt = millis();
 
+  char value[24];
+
   if (strstr(line, "RMC") != nullptr) {
-    // $GNRMC,hhmmss.ss,A,llll.ll,N,yyyyy.yy,E,speed,course,date,...
-    double lat = nmeaToDegrees(field(line, 3), field(line, 4));
-    double lon = nmeaToDegrees(field(line, 5), field(line, 6));
-    bool valid = (field(line, 2)[0] == 'A') && !isnan(lat) && !isnan(lon);
+    // $GNRMC,time,A,llll.ll,N,yyyyy.yy,E,speed,course,date,...  (field 1 = "$GNRMC")
+    char status[4] = "", lat[24] = "", ns[4] = "", lon[24] = "", ew[4] = "";
+    nmeaField(line, 3, status, sizeof(status));   // A = valid, V = void
+    nmeaField(line, 4, lat, sizeof(lat));
+    nmeaField(line, 5, ns, sizeof(ns));
+    nmeaField(line, 6, lon, sizeof(lon));
+    nmeaField(line, 7, ew, sizeof(ew));
+
+    double latitude = nmeaToDegrees(lat, ns);
+    double longitude = nmeaToDegrees(lon, ew);
+    bool valid = (status[0] == 'A') && !isnan(latitude) && !isnan(longitude);
     if (valid) {
-      gpsFix.lat = lat;
-      gpsFix.lon = lon;
+      gpsFix.lat = latitude;
+      gpsFix.lon = longitude;
       gpsFix.valid = true;
       gpsFix.millisAtFix = millis();
-      gpsFix.speed = atof(field(line, 7)) * 0.514444f;   // knots -> m/s
-      gpsFix.heading = atof(field(line, 8));
-      prefs.putDouble("lat", lat);
-      prefs.putDouble("lon", lon);
+      nmeaField(line, 8, value, sizeof(value));
+      gpsFix.speed = atof(value) * 0.514444f;       // knots -> m/s
+      nmeaField(line, 9, value, sizeof(value));
+      gpsFix.heading = atof(value);                 // degrees from north
+      prefs.putDouble("lat", latitude);
+      prefs.putDouble("lon", longitude);
     } else {
       gpsFix.valid = false;
     }
   } else if (strstr(line, "GGA") != nullptr) {
     // $GNGGA,time,lat,N,lon,E,quality,sats,hdop,alt,M,...
-    gpsFix.satellites = atoi(field(line, 7));
-    gpsFix.hdop = atof(field(line, 8));
-    gpsFix.altitude = atof(field(line, 9));
-    int quality = atoi(field(line, 6));
+    nmeaField(line, 7, value, sizeof(value));
+    int quality = atoi(value);
+    nmeaField(line, 8, value, sizeof(value));
+    gpsFix.satellites = atoi(value);
+    nmeaField(line, 9, value, sizeof(value));
+    gpsFix.hdop = atof(value);
+    nmeaField(line, 10, value, sizeof(value));
+    gpsFix.altitude = atof(value);
     if (quality == 0) {
       gpsFix.valid = false;   // module is alive but has no fix yet
     }
   }
 }
 
-/** Returns the nth comma separated field of a sentence (n starts at 1). */
-static const char *field(const char *line, int index) {
-  static char buffer[32];
+/**
+ * Copies the nth comma separated field of a sentence (n starts at 1, so field 1 is
+ * the sentence name) into a buffer the caller owns. A shared static buffer would be
+ * overwritten by the next call, which is fatal when two fields are needed at once.
+ */
+bool nmeaField(const char *line, int index, char *out, size_t outSize) {
   int current = 1;
   const char *start = line;
-  for (const char *p = line; *p; p++) {
+  for (const char *p = line; *p != '\0'; p++) {
     if (*p == ',') {
       if (current == index) {
-        size_t length = min((size_t) (p - start), sizeof(buffer) - 1);
-        memcpy(buffer, start, length);
-        buffer[length] = '\0';
-        return buffer;
+        return copyField(start, p, out, outSize);
       }
       current++;
       start = p + 1;
     }
   }
   if (current == index) {
-    snprintf(buffer, sizeof(buffer), "%s", start);
-    return buffer;
+    return copyField(start, line + strlen(line), out, outSize);
   }
-  buffer[0] = '\0';
-  return buffer;
+  out[0] = '\0';
+  return false;
+}
+
+static bool copyField(const char *start, const char *end, char *out, size_t outSize) {
+  size_t length = (size_t) (end - start);
+  if (length > outSize - 1) {
+    length = outSize - 1;
+  }
+  memcpy(out, start, length);
+  out[length] = '\0';
+  return length > 0;
 }
 
 /** "3750.1234",N -> 37.835390 */
@@ -355,7 +379,7 @@ static double nmeaToDegrees(const char *value, const char *hemisphere) {
   double degrees = floor(raw / 100.0);
   double minutes = raw - degrees * 100.0;
   double result = degrees + minutes / 60.0;
-  if (hemisphere[0] == 'S' || hemisphere[0] == 'W') {
+  if (hemisphere != nullptr && (hemisphere[0] == 'S' || hemisphere[0] == 'W')) {
     result = -result;
   }
   return result;

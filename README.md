@@ -52,11 +52,23 @@ app. No cloud, no API keys, no account.
 
 **On the ESP32**
 
-1. Open [`esp32/FleetClient/FleetClient.ino`](esp32/FleetClient/FleetClient.ino).
-2. Set `WIFI_SSID` / `WIFI_PASS` to the phone's hotspot (or your router).
-3. Set `SERVER_IP` to the address from step 3 above.
-4. Leave `SIMULATE_GPS 1` for a first test, then set it to `0` and wire your GPS module to
-   the UART pins at the top of the sketch.
+Two sketches are in the repo, both dependency-free (no GeoLinker, TinyGPS++ or ArduinoJson):
+
+| Sketch | Use it when |
+| --- | --- |
+| [`esp32/FleetTracker/FleetTracker.ino`](esp32/FleetTracker/FleetTracker.ino) | You have a GPS module and the GeoLinker library installed. Their tracker sketch with FleetServer registration added: it still uploads to the GeoLinker cloud and reports the same fix to the app, going Operational when the cloud upload lands and Offline when it does not. |
+| [`esp32/FleetClient/FleetClient.ino`](esp32/FleetClient/FleetClient.ino) | You want the smallest possible sketch, or no GPS module yet (`SIMULATE_GPS 1` walks a fake track). |
+
+Either way:
+
+1. Set the Wi-Fi credentials to the phone's hotspot (or your router).
+2. Set the server address — `fleetHost` / `SERVER_IP` — to the address from step 3 above. It is
+   worth reserving that address in the router's DHCP settings so it does not move.
+3. Wire the GPS module to the pins at the top of the sketch and upload.
+4. Fill in the three placeholders at the top of the sketch — `ssid`, `password` and `apiKey`.
+   The copy in the repo carries dummy values on purpose: this repository is public, so keep your
+   real credentials out of it (a git-ignored `secrets.h` is one way; `.gitignore` already ignores
+   that filename in `esp32/`).
 
 **From a laptop on the same network**
 
@@ -88,9 +100,13 @@ does not — the same two modes the app offers.
 
 ## Building
 
-Every push runs **Android CI** (`.github/workflows/android.yml`): it compiles the app with
-JDK 17 on `ubuntu-latest`, runs lint, and uploads a downloadable **debug APK** artifact. Only
-debug is ever built — there is no release job.
+Every push runs two workflows you can watch:
+
+* **Android CI** (`.github/workflows/android.yml`) — compiles the app with JDK 17 on
+  `ubuntu-latest`, runs lint, and uploads a downloadable **debug APK** artifact. Only debug is
+  ever built — there is no release job.
+* **ESP32 sketches** (`.github/workflows/sketches.yml`) — compiles both tracker sketches against
+  the real ESP32 Arduino core, so a sketch typo fails in CI instead of at the workbench.
 
 ```bash
 ./gradlew assembleDebug     # debug APK in app/build/outputs/apk/debug/
@@ -127,7 +143,8 @@ app/src/main/java/damjay/tracker/fleetserver/
   map/      OsmFleetMap (OpenStreetMap), OfflineMapView/OfflineFleetMap (tile-free map)
   model/    DeviceState, Telemetry, TrackedDevice, Geo helpers
   util/     NetInfo (local addresses incl. hotspot), Prefs
-esp32/FleetClient/          ESP32 sketch (NMEA parsing + reporting, no libraries)
+esp32/FleetClient/          Minimal ESP32 sketch (NMEA parsing + reporting)
+esp32/FleetTracker/         GeoLinker tracker + FleetServer registration (needs the GeoLinker and ArduinoJson libraries)
 docs/                       API reference, brand assets, interactive UI preview
 build-tools/                CI helper: extracts the useful part of a Gradle log
 ```

@@ -1,0 +1,42 @@
+name: ESP32 sketches
+
+# Compiles the tracker sketches against the real ESP32 Arduino core, so a typo in a
+# sketch shows up here instead of on the workbench. Separate from the Android build
+# (android.yml), which produces the APK.
+
+on:
+  push:
+    branches:
+      - "**"
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  compile:
+    name: Compile ESP32 sketches
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Compile sketches
+        uses: arduino/compile-sketches@v1
+        with:
+          fqbn: esp32:esp32:esp32
+          platforms: |
+            - name: esp32:esp32
+              source-url: https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json
+          # FleetTracker keeps the original GeoLinker cloud upload, so it needs that
+          # library and the ArduinoJson it depends on. FleetClient needs neither.
+          libraries: |
+            - source-url: https://github.com/Circuit-Digest/GeoLinker.git
+            - name: ArduinoJson
+          sketch-paths: |
+            - esp32/FleetClient
+            - esp32/FleetTracker
